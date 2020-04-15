@@ -12,7 +12,10 @@ See requirements.txt
   pip freeze > requirements.txt
   ```
 
-  
+
+## Webhooks events list
+
+See [github doc](https://developer.github.com/webhooks/) and [microsoft doc](https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/connectors-using)
 
 ## Test
 
