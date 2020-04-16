@@ -55,6 +55,14 @@ Use ngrok.
 - Set `https://~.ngrok.io`**/analyze_json**` using above url to payload url in Github
 
   ![github_webhook](https://user-images.githubusercontent.com/63040751/79216816-c5f45e80-7e88-11ea-8cda-d1fd61b6d55b.PNG)
+  
+- Check URL
+
+  ```bash
+  echo '{text: "test"}' | curl -H 'Content-type: application/json' -d @- {WEBHOOK_URL}
+  ```
+
+  
 
 ## Deploy
 

@@ -1,7 +1,7 @@
 import os
 from flask import Flask, request
 import json
-import requests
+import pymsteams
 app = Flask(__name__)
 
 
@@ -19,22 +19,11 @@ def get_json():
     headers = request.headers
     #print(headers['X-GitHub-Event'])
     contents = request.json
-    #print(content)
 
-    message = compose_message(headers, contents)
+    card = compose_message(headers, contents)
 
-    # send json data to webhook's url
-    response = requests.post(
-        WEBHOOK_URL, data=json.dumps(message),
-        headers={'Content-Type': 'application/json'}
-    )
-
-    # error handling
-    if response.status_code != 200:
-        raise ValueError(
-            'Request to teams returned an error %s, the response is:\n%s'
-            % (response.status_code, response.text)
-        )
+    # send card to webhook's url
+    card.send()
 
 
     return 'done\n'
@@ -43,94 +32,12 @@ def get_json():
  microcoft doc = https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/connectors-using
  https://docs.microsoft.com/en-us/microsoftteams/platform/task-modules-and-cards/cards/cards-reference#office-365-connector-card
  
- The @type and @context are to tell Microsoft Teams what kind of message is coming in and what schema to use to decode and post the message.
- 
- Unfortunately, image was not shown...
-"""
-"""
-message_template = {
-    "@type": "MessageCard",
-    "@context": "http://schema.org/extensions",
-    "summary": "John Doe commented on Trello",
-    "title": "Project Tango",
-    "sections": [
-        {
-            "activityTitle": "John Doe commented",
-            "activitySubtitle": "On Project Tango",
-            "activityText": "\"Here are the designs\"",
-            "activityImage": "http://connectorsdemo.azurewebsites.net/images/MSC12_Oscar_002.jpg"
-        },
-        {
-            "title": "Details",
-            "facts": [
-                {
-                    "name": "Labels",
-                    "value": "Designs, redlines"
-                },
-                {
-                    "name": "Due date",
-                    "value": "Dec 7, 2016"
-                },
-                {
-                    "name": "Attachments",
-                    "value": "[final.jpg](http://connectorsdemo.azurewebsites.net/images/WIN14_Jan_04.jpg)"
-                }
-            ]
-        },
-        {
-            "title": "Images",
-            "images": [
-                {
-                    "image":"http://connectorsdemo.azurewebsites.net/images/MicrosoftSurface_024_Cafe_OH-06315_VS_R1c.jpg"
-                },
-                {
-                    "image":"http://connectorsdemo.azurewebsites.net/images/WIN12_Scene_01.jpg"
-                },
-                {
-                    "image":"http://connectorsdemo.azurewebsites.net/images/WIN12_Anthony_02.jpg"
-                }
-            ]
-        }
-    ],
-    "potentialAction": [
-        {
-            "@context": "http://schema.org",
-            "@type": "ViewAction",
-            "name": "View in Trello",
-            "target": [
-                "https://trello.com/c/1101/"
-            ]
-        }
-    ]
-  }
+ pymsteams doc = https://pypi.org/project/pymsteams/
 """
 
 
 def compose_message(headers, contents):
     event = headers['X-GitHub-Event']
-
-    title = "None"
-    summary = "None"
-    sections = [
-        {
-            "title": "Details",
-            "facts": [
-                {
-                    "name": "Labels",
-                    "value": "Designs, redlines"
-                },
-                {
-                    "name": "Due date",
-                    "value": "Dec 7, 2016"
-                },
-                {
-                    "name": "Attachments",
-                    "value": "[final.jpg](http://connectorsdemo.azurewebsites.net/images/WIN14_Jan_04.jpg)" # markdown is available
-                }
-            ]
-        }
-    ]
-    url = 'https://github.com/MIZUNO-CORPORATION'
 
     if event == 'ping': # this event is occurred when the new webhook is established
         title = "New webhook"
@@ -140,7 +47,7 @@ def compose_message(headers, contents):
         events_list = contents['hook']['events']
         editor = contents['sender']['login']
 
-        sections = compose_sections(Date=date, Events=events_list, Editor=editor)
+        sections = compose_sections(title, summary, Date=date, Events=events_list, Editor=editor)
 
         url = 'https://github.com/organizations/MIZUNO-CORPORATION/settings/hooks'
 
@@ -151,7 +58,7 @@ def compose_message(headers, contents):
         repository = contents['repository']['name']
         editor = contents['sender']['login']
 
-        sections = compose_sections(Repository=repository, Editor=editor)
+        sections = compose_sections(title, summary, Repository=repository, Editor=editor)
 
         url = contents['pages'][0]['html_url']
 
@@ -164,7 +71,7 @@ def compose_message(headers, contents):
         editor = contents['sender']['login']
         date = contents['issue']['updated_at']
 
-        sections = compose_sections(Repository=repository, Title=event_title, Editor=editor, Date=date)
+        sections = compose_sections(title, summary, Repository=repository, Title=event_title, Editor=editor, Date=date)
 
         url = contents['issue']['html_url']
 
@@ -177,7 +84,7 @@ def compose_message(headers, contents):
         editor = contents['sender']['login']
         date = contents['pull_request']['updated_at']
 
-        sections = compose_sections(Repository=repository, Title=event_title, Editor=editor, Date=date)
+        sections = compose_sections(title, summary, Repository=repository, Title=event_title, Editor=editor, Date=date)
 
         url = contents['pull_request']['html_url']
 
@@ -189,7 +96,7 @@ def compose_message(headers, contents):
         editor = contents['sender']['login']
         date = contents['repository']['updated_at']
 
-        sections = compose_sections(Repository=repository, Editor=editor, Date=date)
+        sections = compose_sections(title, summary, Repository=repository, Editor=editor, Date=date)
 
         url = contents['repository']['html_url']
 
@@ -201,7 +108,7 @@ def compose_message(headers, contents):
         editor = contents['sender']['login']
         date = contents['repository']['updated_at']
 
-        sections = compose_sections(Repository=repository, Editor=editor, Date=date)
+        sections = compose_sections(title, summary, Repository=repository, Editor=editor, Date=date)
 
         url = contents['repository']['html_url']
 
@@ -212,7 +119,7 @@ def compose_message(headers, contents):
         name = contents['team']['name']
         editor = contents['sender']['login']
 
-        sections = compose_sections(Name=name, Editor=editor)
+        sections = compose_sections(title, summary, Name=name, Editor=editor)
 
         url = contents['team']['html_url']
 
@@ -224,66 +131,40 @@ def compose_message(headers, contents):
         repository_name = contents['repository']['name']
         editor = contents['sender']['login']
 
-        sections = compose_sections(Team=team_name, Repository=repository_name, Editor=editor)
+        sections = compose_sections(title, summary, Team=team_name, Repository=repository_name, Editor=editor)
 
         url = contents['team']['html_url']
 
     else:
         raise ValueError('Unknown event(: {}) was occurred'.format(event))
 
-    return get_template_json(title, summary, sections, url)
+    return compose_card(title, summary, sections, url)
 
-def compose_sections(**kwargs):
-    sections = []
+def compose_sections(title, summary, **kwargs):
+    sections = pymsteams.cardsection()
+
+    sections.activityTitle(title)
+    sections.activitySubtitle(summary)
+    sections.activityImage('https://user-images.githubusercontent.com/63040751/79412387-53969200-7fe0-11ea-8e39-6da2e22bab6e.png')
+
     for key, value in kwargs.items():
-        sections += [{
-            "name": key,
-            "value": value
-        }]
+        sections.addFact(key, value)
 
-    return [
-        {
-            "title": "Details",
-            "facts": [
-                sections
-            ]
-        }
-    ]
+    return sections
 
 
-def get_template_json(title, summary, sections, url=None):
+def compose_card(title, summary, sections, url=None):
+    card = pymsteams.connectorcard(WEBHOOK_URL)
 
-    message_template = {
-        "@type": "MessageCard",
-        "@context": "http://schema.org/extensions",
-        "summary": summary,
-        "title": title,
-        "sections": sections,
-        "potentialAction": [
-            {
-                "@context": "http://schema.org",
-                "@type": "ViewAction",
-                "name": "Go {}".format(title),
-                "target": [
-                    url
-                ]
-            }
-        ]
-    }
+    card.title(title)
+    card.summary(summary)
+
+    card.addSection(sections)
 
     if url is not None:
-        message_template['potentialAction'] = [
-            {
-                "@context": "http://schema.org",
-                "@type": "ViewAction",
-                "name": "Go {}".format(title),
-                "target": [
-                    url
-                ]
-            }
-        ]
+        card.addLinkButton("Check {}".format(title), url)
 
-    return message_template
+    return card
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
