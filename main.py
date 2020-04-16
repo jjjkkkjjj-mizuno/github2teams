@@ -191,7 +191,7 @@ def compose_message(headers, contents):
 
         sections = compose_sections(Repository=repository, Editor=editor, Date=date)
 
-        url = contents['push']['html_url']
+        url = contents['repository']['html_url']
 
     elif event == 'repository':
         title = 'Repository'
