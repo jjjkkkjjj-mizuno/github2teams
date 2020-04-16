@@ -1,6 +1,6 @@
 import os
 from flask import Flask, request
-import json
+import datetime
 import pymsteams
 app = Flask(__name__)
 
@@ -44,6 +44,7 @@ def compose_message(headers, contents):
         summary = 'New webhook was established'
 
         date = contents['hook']['updated_at']
+        date = date_converter(date)
         events_list = contents['hook']['events']
         editor = contents['sender']['login']
 
@@ -70,6 +71,7 @@ def compose_message(headers, contents):
         event_title = contents['issue']['title']
         editor = contents['sender']['login']
         date = contents['issue']['updated_at']
+        date = date_converter(date)
 
         sections = compose_sections(title, summary, Repository=repository, Title=event_title, Editor=editor, Date=date)
 
@@ -83,6 +85,7 @@ def compose_message(headers, contents):
         event_title = contents['pull_request']['title']
         editor = contents['sender']['login']
         date = contents['pull_request']['updated_at']
+        date = date_converter(date)
 
         sections = compose_sections(title, summary, Repository=repository, Title=event_title, Editor=editor, Date=date)
 
@@ -95,6 +98,7 @@ def compose_message(headers, contents):
         repository = contents['repository']['name']
         editor = contents['sender']['login']
         date = contents['repository']['updated_at']
+        date = date_converter(date)
 
         sections = compose_sections(title, summary, Repository=repository, Editor=editor, Date=date)
 
@@ -107,6 +111,7 @@ def compose_message(headers, contents):
         repository = contents['repository']['name']
         editor = contents['sender']['login']
         date = contents['repository']['updated_at']
+        date = date_converter(date)
 
         sections = compose_sections(title, summary, Repository=repository, Editor=editor, Date=date)
 
@@ -139,6 +144,43 @@ def compose_message(headers, contents):
         raise ValueError('Unknown event(: {}) was occurred'.format(event))
 
     return compose_card(title, summary, sections, url)
+
+def date_converter(date):
+    """
+    Convert GMT to JST(+9)
+    :param date: str, given date is GMT
+    :return:
+        jst_date: str, represented JST
+    """
+    # print(date)
+    # 2020-04-16T04:23:59Z
+    # split into date and time
+    d, t = date.split('T')
+
+    # get year, month, day, hour, minute, second
+    d_ = d.split('-')
+    t_ = t.split(':')
+    y, mo, d, h, mi, s = int(d_[0]), int(d_[1]), int(d_[2]), int(t_[0]), int(t_[1]), int(t_[2][:-1])
+
+    dateT = datetime.datetime(y, mo, d, h, mi, s)
+    # plus 9 hours to convert to JST
+    dateT += datetime.timedelta(hours=9)
+
+    """
+    >>> date = datetime.datetime(200,2,2,2,2,2)
+    >>> date + datetime.timedelta(hours=26)
+    datetime.datetime(200, 2, 3, 4, 2, 2)
+    >>> '{:%H:%M:%S}'.format(date)
+    '02:02:02'
+    >>> '{:%Y:%M:%D}'.format(date)
+    '0200:02:02/02/00'
+    >>> '{:%Y:%M:%d}'.format(date)
+    '0200:02:02'
+    """
+
+    jst_date = '{:%Y-%M-%d}T{:%H:%M:%S}Z'.format(dateT, dateT)
+
+    return jst_date
 
 def compose_sections(title, summary, **kwargs):
     sections = pymsteams.cardsection()
