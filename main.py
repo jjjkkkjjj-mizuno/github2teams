@@ -41,31 +41,34 @@ def compose_message(headers, contents):
 
     if event == 'ping': # this event is occurred when the new webhook is established
         title = "New webhook"
-        summary = 'New webhook was established'
+        action = 'established'
+        summary = 'New webhook was **established**'
 
         date = contents['hook']['updated_at']
         date = date_converter(date)
         events_list = contents['hook']['events']
         editor = contents['sender']['login']
 
-        sections = compose_sections(title, summary, Date=date, Events=events_list, Editor=editor)
+        sections = compose_sections(action, summary, Date=date, Events=events_list, Editor=editor)
 
         url = 'https://github.com/organizations/MIZUNO-CORPORATION/settings/hooks'
 
     elif event == 'gollum': # When Wiki page was updated or created
         title = 'Wiki'
-        summary = 'Wiki page was updated'
+        action = 'updated'
+        summary = 'Wiki page was **updated**'
 
         repository = contents['repository']['name']
         editor = contents['sender']['login']
 
-        sections = compose_sections(title, summary, Repository=repository, Editor=editor)
+        sections = compose_sections(action, summary, Repository=repository, Editor=editor)
 
         url = contents['pages'][0]['html_url']
 
     elif event == 'issues':
         title = 'Issue'
-        summary = 'Issue was {}'.format(contents['action'])
+        action = contents['action']
+        summary = 'Issue was **{}**'.format(action)
 
         repository = contents['repository']['name']
         event_title = contents['issue']['title']
@@ -73,13 +76,14 @@ def compose_message(headers, contents):
         date = contents['issue']['updated_at']
         date = date_converter(date)
 
-        sections = compose_sections(title, summary, Repository=repository, Title=event_title, Editor=editor, Date=date)
+        sections = compose_sections(action, summary, Repository=repository, Title=event_title, Editor=editor, Date=date)
 
         url = contents['issue']['html_url']
 
     elif event == 'pull_request':
         title = 'Pull Request'
-        summary = 'Pull Request was {}'.format(contents['action'])
+        action = contents['action']
+        summary = 'Pull Request was **{}**'.format(action)
 
         repository = contents['repository']['name']
         event_title = contents['pull_request']['title']
@@ -87,13 +91,13 @@ def compose_message(headers, contents):
         date = contents['pull_request']['updated_at']
         date = date_converter(date)
 
-        sections = compose_sections(title, summary, Repository=repository, Title=event_title, Editor=editor, Date=date)
+        sections = compose_sections(action, summary, Repository=repository, Title=event_title, Editor=editor, Date=date)
 
         url = contents['pull_request']['html_url']
 
     elif event == 'push':
         title = 'Push'
-        summary = 'New commits were pushed to {}'.format(contents['repository']['name'])
+        summary = 'New commits were pushed to **{}**'.format(contents['repository']['name'])
 
         repository = contents['repository']['name']
         editor = contents['sender']['login']
@@ -106,25 +110,27 @@ def compose_message(headers, contents):
 
     elif event == 'repository':
         title = 'Repository'
-        summary = 'Repository was {}'.format(contents['action'])
+        action = contents['action']
+        summary = 'Repository was **{}**'.format(action)
 
         repository = contents['repository']['name']
         editor = contents['sender']['login']
         date = contents['repository']['updated_at']
         date = date_converter(date)
 
-        sections = compose_sections(title, summary, Repository=repository, Editor=editor, Date=date)
+        sections = compose_sections(action, summary, Repository=repository, Editor=editor, Date=date)
 
         url = contents['repository']['html_url']
 
     elif event == 'team':
         title = 'Team'
-        summary = 'Team was {}'.format(contents['action'])
+        action = contents['action']
+        summary = 'Team was **{}**'.format(action)
 
         name = contents['team']['name']
         editor = contents['sender']['login']
 
-        sections = compose_sections(title, summary, Name=name, Editor=editor)
+        sections = compose_sections(action, summary, Name=name, Editor=editor)
 
         url = contents['team']['html_url']
 
@@ -182,10 +188,10 @@ def date_converter(date):
 
     return jst_date
 
-def compose_sections(title, summary, **kwargs):
+def compose_sections(action, summary, **kwargs):
     sections = pymsteams.cardsection()
 
-    sections.activityTitle(title)
+    sections.activityTitle(action)
     sections.activitySubtitle(summary)
     sections.activityImage('https://user-images.githubusercontent.com/63040751/79412387-53969200-7fe0-11ea-8e39-6da2e22bab6e.png')
 
