@@ -32,6 +32,8 @@ Use ngrok.
 
 - Set Deployed Environment path
 
+  Note that `WEBHOOK_URL` is from Teams' webhook URL not github's payload URL.
+
   ```bash
   export WEBHOOK_URL='https://~~~'
   ```
